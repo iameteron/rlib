@@ -1,45 +1,53 @@
 import gymnasium as gym
 import numpy as np
+import torch
+import torch.nn as nn
+
 from tqdm import tqdm
 
 from BaseAlgorithm import BaseAlgorithm
+from ..common import ReplayBuffer
 
 
-class TableAgent(BaseAlgorithm):
+class DQN(BaseAlgorithm):
     def __init__(
-        self, env: gym.Env, eps: float = 1e-2, gamma: float = 0.999, alpha: float = 1e-1
+        self, env: gym.Env, eps: float = 1e-2, gamma: float = 0.999, alpha: float = 3e-4
     ):
         self.env = env
-        self.state_n = self.env.observation_space.n
-        self.action_n = self.env.action_space.n
 
         self.eps = eps
-        self.alpha = alpha
         self.gamma = gamma
+        self.alpha = alpha
 
-        self.q_values = np.zeros((self.state_n, self.action_n))
+        self.observation_dim = self.env.observation_space.shape[0]
+        self.action_n = self.env.action_space.n
 
-    def predict(self, state: int):
-        """
-        Get epsilon-greedy action
-        """
-        action = np.argmax(self.q_values[state, :])
+        self.neuron_n = 128
+        self.model = nn.Sequential(
+            nn.Linear(self.observation_dim, self.neuron_n),
+            nn.ReLU(),
+            nn.Linear(self.neuron_n, self.neuron_n),
+            nn.ReLU(),
+            nn.Linear(self.neuron_n, self.action_n)
+        )
+
+        self.replay_buffer = ReplayBuffer()
+
+    
+    def predict(self, obs):
+        greedy_action = torch.argmax(self.model(obs)).numpy()
         probs = self.eps / self.action_n * np.ones(self.action_n)
-        probs[action] = 1 - self.eps + self.eps / self.action_n
+        probs[greedy_action] = 1 - self.eps + self.eps / self.action_n
         return np.random.choice(np.arange(self.action_n), p=probs)
 
-
     def train(self, episode_n, verbose: bool = True):
-        """
-        Train function
-        """
         for i in tqdm(range(episode_n)):
             rewards = self._fit_trajectory()
             if verbose:
                 print(f"Episode: {i}, Total Episode Reward: {np.sum(rewards)}")
             self.eps *= 0.99
 
-        
+
     def _fit_trajectory(self):
         """
         One training episode 
@@ -53,19 +61,16 @@ class TableAgent(BaseAlgorithm):
             next_obs, reward, terminated, truncated, info = self.env.step(action)
             rewards.append(reward)
 
-            self._fit(obs, action, reward, terminated, next_obs)
+            self.replay_buffer.get_transition()
+
+            batch = self.replay_buffer.sample_experience()
+            self._fit(batch)
 
             done = terminated or truncated
             obs = next_obs
 
         return rewards
 
-    def _fit(self, obs, action, reward, terminated, next_obs):
-        """
-        Update Q-values 
-        """
-        self.q_values[obs][action] += self.alpha * (
-            reward
-            + self.gamma
-            * np.max(self.q_values[next_obs, :] - self.q_values[obs, action])
-        )
+
+    def _fit(self, batch):
+        return None
