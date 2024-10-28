@@ -16,6 +16,9 @@ class DQN(BaseAlgorithm):
         self,
         env: gym.Env,
         eps: float = 1e-2,
+
+
+
         gamma: float = 0.999,
         alpha: float = 3e-4,
         batch_size: int = 64,
