@@ -1,10 +1,6 @@
 import gymnasium as gym
 import numpy as np
 import torch
-
-
-
-
 import torch.nn as nn
 
 from ..common import ReplayBuffer
@@ -16,9 +12,6 @@ class DQN(BaseAlgorithm):
         self,
         env: gym.Env,
         eps: float = 1e-2,
-
-
-
         gamma: float = 0.999,
         alpha: float = 3e-4,
         batch_size: int = 64,
@@ -65,9 +58,7 @@ class DQN(BaseAlgorithm):
         return total_rewards
 
     def _fit_trajectory(self):
-        """
-        One training episode
-        """
+        """One training episode."""
         state, info = self.env.reset()
         done = False
         rewards = []

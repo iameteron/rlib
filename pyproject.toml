@@ -1,12 +1,9 @@
 [tool.ruff]
-select = ["I", "E", "F", "B", "C", "S", "D", "M"]  
+select = ["I", "E", "F", "B", "C", "M"]  
 ignore = []  
 line-length = 88  
 exclude = ["*/__init__.py"]  
 
-[tool.ruff.isort]
-profile = "black"  
-
-[tool.ruff.mypy]
-disallow_untyped_calls = true  
+[tool.mypy]
+disallow_untyped_calls = true
 disallow_untyped_defs = true
