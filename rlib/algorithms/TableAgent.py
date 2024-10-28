@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 from tqdm import tqdm
 
-from BaseAlgorithm import BaseAlgorithm
+from .BaseAlgorithm import BaseAlgorithm
 
 
 class TableAgent(BaseAlgorithm):

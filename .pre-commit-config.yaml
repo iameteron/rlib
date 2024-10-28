@@ -1,0 +1,7 @@
+repos:
+  - repo: https://github.com/charliermarsh/ruff
+    rev: main  
+    hooks:
+      - id: ruff
+        additional_dependencies: [ruff]
+        args: ["--config", "pyproject.toml"]
