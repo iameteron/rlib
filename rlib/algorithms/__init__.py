@@ -1,5 +1,6 @@
 from .BaseAlgorithm import BaseAlgorithm
 from .DQN import DQN
-from .TableAgent import TableAgent
+from .QLearning import QLearning
+from .PPO import PPO
 
-__all__ = ["BaseAlgorithm", "TableAgent", "DQN"]
+__all__ = ["BaseAlgorithm", "QLearning", "DQN", "PPO"]

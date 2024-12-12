@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 
+
 class BaseAlgorithm(ABC):
+    @abstractmethod
     def __init__(self):
         pass
     

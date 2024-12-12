@@ -1,4 +1,4 @@
-from .algorithms import BaseAlgorithm, TableAgent, DQN
+from .algorithms import BaseAlgorithm, QLearning, DQN, PPO
 from .common import ReplayBuffer
 
-__all__ = ["BaseAlgorithm", "TableAgent", "DQN", "ReplayBuffer"]
+__all__ = ["BaseAlgorithm", "QLearning", "DQN", "ReplayBuffer", "PPO"]

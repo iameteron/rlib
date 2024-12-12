@@ -11,29 +11,29 @@ class DQN(BaseAlgorithm):
     def __init__(
         self,
         env: gym.Env,
+        model: nn.Module,
         eps: float = 1e-2,
         gamma: float = 0.999,
-        alpha: float = 3e-4,
         batch_size: int = 64,
     ):
         self.env = env
 
         self.eps = eps
         self.gamma = gamma
-        self.alpha = alpha
         self.batch_size = batch_size
 
         self.observation_dim = self.env.observation_space.shape[0]
         self.action_n = self.env.action_space.n
 
-        self.neuron_n = 128
-        self.model = nn.Sequential(
-            nn.Linear(self.observation_dim, self.neuron_n),
-            nn.ReLU(),
-            nn.Linear(self.neuron_n, self.neuron_n),
-            nn.ReLU(),
-            nn.Linear(self.neuron_n, self.action_n),
-        )
+        if model is None:
+            self.neuron_n = 128
+            model = nn.Sequential(
+                nn.Linear(self.observation_dim, self.neuron_n),
+                nn.ReLU(),
+                nn.Linear(self.neuron_n, self.neuron_n),
+                nn.ReLU(),
+                nn.Linear(self.neuron_n, self.action_n),
+            )
 
         self.replay_buffer = ReplayBuffer()
 
@@ -63,7 +63,7 @@ class DQN(BaseAlgorithm):
         done = False
         rewards = []
 
-        while not done:
+        while True:
             action = self.predict(state)
             next_state, reward, terminated, truncated, info = self.env.step(action)
             rewards.append(reward)
@@ -76,6 +76,9 @@ class DQN(BaseAlgorithm):
                 self._fit(batch)
 
             done = terminated or truncated
+            if done:
+                break
+
             state = next_state
 
         return rewards
