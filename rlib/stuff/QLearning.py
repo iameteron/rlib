@@ -5,7 +5,7 @@ from tqdm import tqdm
 from .BaseAlgorithm import BaseAlgorithm
 
 
-class QLeagning(BaseAlgorithm):
+class QLearning(BaseAlgorithm):
     def __init__(
         self, env: gym.Env, eps: float = 1e-2, gamma: float = 0.999, alpha: float = 1e-1
     ):
