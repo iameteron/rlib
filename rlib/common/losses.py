@@ -1,6 +1,4 @@
-import numpy as np
 import torch
-from torch.distributions import Categorical, Normal
 
 
 def reinforce_loss(data, returns_normalization=True):
@@ -38,8 +36,8 @@ def ppo_loss(
     actor,
     critic,
     epsilon: float = 0.2,
-    advantage_normalization: bool = True,
-    rewards_normalization: bool = True,
+    advantage_normalization: bool = False,
+    rewards_normalization: bool = False,
 ):
     loss = {}
 
@@ -56,8 +54,6 @@ def ppo_loss(
 
     targets = data["q_estimations"].reshape(ratio.shape)
     advantages = targets.detach() - values
-    # print(targets.shape, values.shape, advantages.shape)
-    # print(old_log_probs.shape, new_log_probs.shape, ratio.shape)
 
     if advantage_normalization:
         mean = advantages.mean()
@@ -66,9 +62,6 @@ def ppo_loss(
 
     actor_loss_1 = ratio * advantages.detach()
     actor_loss_2 = ratio_clipped * advantages.detach()
-
-    # print(actor_loss_1.shape)
-    # print(actor_loss_2.shape)
 
     loss["actor"] = -(torch.min(actor_loss_1, actor_loss_2)).mean()
     loss["critic"] = (advantages**2).mean()

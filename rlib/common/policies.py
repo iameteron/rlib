@@ -30,7 +30,7 @@ class StochasticMlpPolicy(nn.Module):
             log_std: (torch.Tensor): (B, action_dim)
         """
         x = self.shared_net(input)
-        mu = self.mu_layer(x)
+        mu = torch.tanh(self.mu_layer(x))
         log_std = self.log_std_layer(x)
         log_std = torch.clamp(log_std, min=-20, max=2)
 
@@ -38,8 +38,6 @@ class StochasticMlpPolicy(nn.Module):
 
     def get_action(self, input, action=None, deterministic=False):
         """
-        Called for tensors
-
         Args:
             input (torch.Tensor): (B, obs_dim)
 

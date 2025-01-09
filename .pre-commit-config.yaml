@@ -3,6 +3,5 @@ repos:
     rev: v0.7.1
     hooks:
       - id: ruff
-        args: ["--fix"]
+        args: ["--fix", "--config", "pyproject.toml"]
         additional_dependencies: [ruff]
-        args: ["--config", "pyproject.toml"]
