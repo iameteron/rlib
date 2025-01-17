@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 
 from ..common.buffer import RolloutBuffer
-from ..common.logger import Logger
+from ..common.logger import TensorBoardLogger
 from ..common.losses import ppo_loss
 
 
@@ -14,23 +14,23 @@ def ppo(
     critic_optimizer,
     total_timesteps: int = 50_000,
     trajectories_n: int = 20,
-    epoch_n: int = 30,
+    epochs_per_episode: int = 30,
     batch_size: int = 128,
 ):
     buffer = RolloutBuffer()
-    logger = Logger()
+    logger = TensorBoardLogger(log_dir="./tb_logs/ppo_")
 
     steps_n = 0
+    gd_step_n = 0
+
     while steps_n < total_timesteps:
 
         buffer.collect_rollouts(env, actor, trajectories_n=trajectories_n)
 
         data = buffer.get_data()
-
         rollout_size = data["observations"].shape[0]
-        steps_n += rollout_size
 
-        for _ in range(epoch_n):
+        for _ in range(epochs_per_episode):
             indices = np.random.permutation(range(rollout_size))
 
             for start in range(0, rollout_size, batch_size):
@@ -52,4 +52,15 @@ def ppo(
                 critic_optimizer.step()
                 critic_optimizer.zero_grad()
                 
-        logger.log(steps_n, data)
+                # Logging
+                gd_step_n += 1
+                logger.log_scalars(loss, gd_step_n)
+
+        steps_n += rollout_size
+
+        # Logging
+        trajectories = buffer.get_trajectories()
+        logger.log_trajectories(trajectories)
+
+
+    logger.close()

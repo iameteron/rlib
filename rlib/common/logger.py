@@ -1,3 +1,43 @@
+from datetime import datetime
+
+import numpy as np
+from torch.utils.tensorboard import SummaryWriter
+
+
+class TensorBoardLogger:
+    def __init__(self, log_dir="./tb_logs/"):
+        experiment_name = "experiment_" + datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        path = log_dir + experiment_name
+
+        self.writer = SummaryWriter(path)
+        self.env_steps = 0
+
+    def log_scalar(self, tag, value, step):
+        self.writer.add_scalar(tag, value, step)
+
+    def log_scalars(self, metrics, step):
+        for tag, value in metrics.items():
+            self.log_scalar(tag, value, step)
+
+    def log_trajectories(self, trajectories):
+        for trajectory in trajectories:
+            reward = np.sum(trajectory["rewards"])
+            length = len(trajectory["rewards"])
+
+            self.env_steps += length
+
+            self.log_scalars(
+                {
+                    "traj_reward": reward,
+                    "traj_len": length,
+                },
+                self.env_steps
+            )
+
+    def close(self):
+        self.writer.close()
+
+
 class Logger:
     def __init__(self, log_frequency=1000):
         self.log_frequency = log_frequency
