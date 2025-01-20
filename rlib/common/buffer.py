@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from .utils import get_returns
@@ -57,12 +58,12 @@ class RolloutBuffer:
         indices = [i for i, value in enumerate(dones) if value]
 
         trajectory = {}
-        trajectory["rewards"] = self.rewards[0: indices[0] + 1]
+        trajectory["rewards"] = self.rewards[0 : indices[0] + 1]
         trajectories.append(trajectory)
 
         for i in range(len(indices) - 1):
             trajectory = {}
-            trajectory["rewards"] = self.rewards[indices[i] + 1: indices[i + 1] + 1]
+            trajectory["rewards"] = self.rewards[indices[i] + 1 : indices[i + 1] + 1]
             trajectories.append(trajectory)
 
         return trajectories
@@ -95,4 +96,93 @@ class RolloutBuffer:
 
             if trajectories_n and trajectories_collected >= trajectories_n:
                 return
-            
+
+
+class ReplayBuffer:
+    def __init__(
+        self,
+        obs_dim,
+        action_dim,
+        max_size: int = 10000,
+    ):
+        self.max_size = max_size
+
+        self.size = 0
+        self.pointer = 0
+        self.old_done = 0
+        self.new_done = 0
+        self.curr_obs = None
+
+        self.observations = np.zeros((max_size, obs_dim))
+        self.next_observations = np.zeros((max_size, obs_dim))
+        self.actions = np.zeros((max_size, action_dim))
+        self.rewards = np.zeros((max_size, 1))
+        self.terminated = np.zeros((max_size, 1))
+        self.truncated = np.zeros((max_size, 1))
+
+    def add_transition(self, obs, next_obs, action, reward, terminated, truncated):
+        self.observations[self.pointer] = obs
+        self.next_observations[self.pointer] = next_obs
+        self.actions[self.pointer] = action
+        self.rewards[self.pointer] = reward
+        self.terminated[self.pointer] = terminated
+        self.truncated[self.pointer] = truncated
+
+        self.done = terminated or truncated
+        if self.done:
+            self.old_done = self.new_done
+            self.new_done = self.pointer
+
+        self.pointer = (self.pointer + 1) % self.max_size
+        self.size = min(self.size + 1, self.max_size)
+
+    def collect_transition(self, env, policy):
+        if self.curr_obs is None:
+            self.curr_obs, _ = env.reset()
+
+        action, _ = policy.predict(self.curr_obs)
+        next_obs, reward, terminated, truncated, _ = env.step(action)
+        self.add_transition(
+            self.curr_obs, next_obs, action, reward, terminated, truncated
+        )
+
+        if terminated or truncated:
+            next_obs, _ = env.reset()
+
+        self.curr_obs = next_obs
+
+    def get_batch(self, batch_size):
+        assert self.size >= batch_size, "Batch size greater than buffer size"
+
+        indices = np.random.choice(range(self.size), batch_size, replace=False)
+
+        batch = {
+            "observations": torch.tensor(
+                self.observations[indices], dtype=torch.float32
+            ),
+            "next_observations": torch.tensor(
+                self.next_observations[indices], dtype=torch.float32
+            ),
+            "actions": torch.tensor(self.actions[indices], dtype=torch.float32),
+            "rewards": torch.tensor(self.rewards[indices], dtype=torch.float32),
+            "terminated": torch.tensor(self.terminated[indices], dtype=torch.bool),
+            "truncated": torch.tensor(self.truncated[indices], dtype=torch.bool),
+        }
+
+        return batch
+
+    def get_last_trajectory(self):
+        trajectories = []
+
+        trajectory = {}
+        if self.new_done < self.old_done:
+            trajectory["rewards"] = np.concatenate(
+                (self.rewards[self.old_done + 1 :], self.rewards[: self.new_done + 1]),
+                axis=0,
+            )
+        else:
+            trajectory["rewards"] = self.rewards[self.old_done + 1 : self.new_done + 1]
+
+        trajectories.append(trajectory)
+
+        return trajectories

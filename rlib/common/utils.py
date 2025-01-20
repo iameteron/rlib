@@ -24,3 +24,11 @@ def get_max_step_advantage(rewards, values, terminated, gamma=0.9):
     targets = returns[:-1]
     advantages = targets - values[:-1]
     return targets, advantages
+
+
+def smooth_update(model, target_model, tau: float = 0.99):
+    for param, target_param in zip(model.parameters(), target_model.parameters()):
+        new_terget_param = tau * target_param + (1 - tau) * param
+        target_param.data.copy_(new_terget_param)
+
+    return target_model
