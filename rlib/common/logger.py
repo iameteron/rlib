@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 import numpy as np
@@ -7,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 class TensorBoardLogger:
     def __init__(self, log_dir="./tb_logs/"):
         experiment_name = "experiment_" + datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        path = log_dir + experiment_name
+        path = os.path.abspath(log_dir + experiment_name)
 
         self.writer = SummaryWriter(path)
         self.env_steps = 0

@@ -36,7 +36,6 @@ def td3(
     steps_n = 0
     while steps_n < total_timesteps:
         buffer.collect_transition(env, actor)
-        steps_n += 1
 
         if buffer.size < training_starts:
             continue
