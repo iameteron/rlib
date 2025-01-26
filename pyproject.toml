@@ -2,7 +2,7 @@
 select = ["I", "E", "F", "B", "C", "M"]  
 ignore = []  
 line-length = 88  
-exclude = ["*/__init__.py", "*examples", "*stuff"]  
+exclude = ["*/__init__.py", "*stuff"]  
 
 [tool.mypy]
 disallow_untyped_calls = true
