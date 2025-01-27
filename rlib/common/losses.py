@@ -110,7 +110,12 @@ def td3_loss(
     terminated = data["terminated"]
 
     actor_outputs = actor(observations)
-    loss["actor"] = -critic_1(observations, actor_outputs).mean()
+
+    q_values = torch.min(
+        critic_1(observations, actor_outputs),
+        critic_2(observations, actor_outputs),
+    )
+    loss["actor"] = -q_values.mean()
 
     with torch.no_grad():
         actions_target = actor_target(next_observations)

@@ -52,10 +52,9 @@ def td3(
             critic_2_target,
         )
 
-        if steps_n % target_update_frequency == 0:
-            loss["actor"].backward()
-            actor_optimizer.step()
-            actor_optimizer.zero_grad()
+        loss["actor"].backward()
+        actor_optimizer.step()
+        actor_optimizer.zero_grad()
 
         loss["critic_1"].backward()
         critic_1_optimizer.step()
@@ -66,7 +65,7 @@ def td3(
         critic_2_optimizer.zero_grad()
 
         if steps_n % target_update_frequency == 0:
-            actor_target = smooth_update(actor, actor_target)
+            # actor_target = smooth_update(actor, actor_target)
             critic_1_target = smooth_update(critic_1, critic_1_target)
             critic_2_target = smooth_update(critic_2, critic_2_target)
 
