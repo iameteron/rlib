@@ -53,7 +53,7 @@ def get_trajectory(env, agent, visualize=False, deterministic=True):
     return trajectory
 
 
-def validation(env, agent, validation_n: int = 20, deterministic=False):
+def validation(env, agent, validation_n: int = 20, deterministic=True):
     total_rewards = []
     for _ in range(validation_n):
         trajectory = get_trajectory(env, agent, deterministic=deterministic)
