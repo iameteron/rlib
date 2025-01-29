@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 
 import numpy as np
+import torch
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -22,8 +23,8 @@ class TensorBoardLogger:
 
     def log_trajectories(self, trajectories):
         for trajectory in trajectories:
-            reward = np.sum(trajectory["rewards"])
-            length = len(trajectory["rewards"])
+            reward = torch.sum(trajectory["rewards"])
+            length = trajectory["rewards"].shape[0]
 
             self.env_steps += length
 

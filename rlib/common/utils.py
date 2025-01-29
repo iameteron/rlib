@@ -8,13 +8,13 @@ def get_returns(rewards, terminated, gamma=0.9):
 
     # TODO add truncated, values
     for t in reversed(range(rewards_n - 1)):
-        returns[t] = rewards[t] + (~terminated[t]) * gamma * returns[t + 1]
+        returns[t] = rewards[t] + (1 - terminated[t]) * gamma * returns[t + 1]
 
     return returns
 
 
 def get_1_step_td_advantage(rewards, values, terminated, gamma=0.9):
-    targets = rewards[:-1] + gamma * (~terminated[:-1]) * values[1:]
+    targets = rewards[:-1] + gamma * (1 - terminated[:-1]) * values[1:]
     advantages = targets - values[:-1]
     return targets, advantages
 

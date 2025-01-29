@@ -42,8 +42,8 @@ class RolloutBuffer:
             "observations": self.process_field(self.observations, reshape=False),
             "actions": self.process_field(self.actions, reshape=False),
             "rewards": self.process_field(self.rewards),
-            "terminated": self.process_field(self.terminated, torch.bool),
-            "truncated": self.process_field(self.truncated, torch.bool),
+            "terminated": self.process_field(self.terminated, torch.int8),
+            "truncated": self.process_field(self.truncated, torch.int8),
         }
 
         data["log_probs"] = torch.cat(self.log_probs, dim=0)
@@ -51,19 +51,36 @@ class RolloutBuffer:
 
         return data
 
-    def get_trajectories(self):
+    def _get_trajectory_from_data(self, data, start, end):
+        trajectory = {}
+
+        trajectory["observations"] = data["observations"][start: end]
+        trajectory["actions"] = data["actions"][start: end]
+        trajectory["rewards"] = data["rewards"][start: end]
+        trajectory["terminated"] = data["terminated"][start: end]
+        trajectory["q_estimations"] = data["q_estimations"][start: end]
+
+        return trajectory
+
+    def get_trajectories(self, data):
+        """
+        Returns:
+            trajectories: List[Dict[torch.tensor]]: List of trajectory dicts
+        """
         trajectories = []
 
-        dones = [term or trunc for term, trunc in zip(self.terminated, self.truncated)]
+        dones = [
+            term or trunc for term, trunc in zip(data["terminated"], data["truncated"])
+        ]
         indices = [i for i, value in enumerate(dones) if value]
 
-        trajectory = {}
-        trajectory["rewards"] = self.rewards[0 : indices[0] + 1]
+        trajectory = self._get_trajectory_from_data(data, 0, indices[0] + 1)
         trajectories.append(trajectory)
 
         for i in range(len(indices) - 1):
-            trajectory = {}
-            trajectory["rewards"] = self.rewards[indices[i] + 1 : indices[i + 1] + 1]
+            start = indices[i] + 1
+            end = indices[i + 1] + 1
+            trajectory = self._get_trajectory_from_data(data, start, end)
             trajectories.append(trajectory)
 
         return trajectories
