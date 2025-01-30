@@ -36,7 +36,7 @@ class RolloutBuffer:
     def get_data(self):
         """
         Returns:
-            data: Dict[torch.tensor]: Tensor shape (N, non-zero)
+            data: Dict[torch.tensor]: Dict of tensors shape (N, dim)
         """
         data = {
             "observations": self.process_field(self.observations, reshape=False),
@@ -54,11 +54,11 @@ class RolloutBuffer:
     def _get_trajectory_from_data(self, data, start, end):
         trajectory = {}
 
-        trajectory["observations"] = data["observations"][start: end]
-        trajectory["actions"] = data["actions"][start: end]
-        trajectory["rewards"] = data["rewards"][start: end]
-        trajectory["terminated"] = data["terminated"][start: end]
-        trajectory["q_estimations"] = data["q_estimations"][start: end]
+        trajectory["observations"] = data["observations"][start:end]
+        trajectory["actions"] = data["actions"][start:end]
+        trajectory["rewards"] = data["rewards"][start:end]
+        trajectory["terminated"] = data["terminated"][start:end]
+        trajectory["q_estimations"] = data["q_estimations"][start:end]
 
         return trajectory
 
