@@ -47,7 +47,12 @@ class RolloutBuffer:
         }
 
         data["log_probs"] = torch.cat(self.log_probs, dim=0)
-        data["q_estimations"] = get_returns(data["rewards"], data["terminated"])
+
+        data["dones"] = torch.bitwise_or(data["terminated"], data["truncated"])
+
+        data["q_estimations"] = get_returns(
+            data["rewards"], data["dones"], self.gamma
+        )
 
         return data
 
@@ -57,7 +62,6 @@ class RolloutBuffer:
         trajectory["observations"] = data["observations"][start:end]
         trajectory["actions"] = data["actions"][start:end]
         trajectory["rewards"] = data["rewards"][start:end]
-        trajectory["terminated"] = data["terminated"][start:end]
         trajectory["q_estimations"] = data["q_estimations"][start:end]
 
         return trajectory
@@ -68,11 +72,7 @@ class RolloutBuffer:
             trajectories: List[Dict[torch.tensor]]: List of trajectory dicts
         """
         trajectories = []
-
-        dones = [
-            term or trunc for term, trunc in zip(data["terminated"], data["truncated"])
-        ]
-        indices = [i for i, value in enumerate(dones) if value]
+        indices = torch.nonzero(data["dones"].squeeze()).squeeze().numpy()
 
         trajectory = self._get_trajectory_from_data(data, 0, indices[0] + 1)
         trajectories.append(trajectory)
