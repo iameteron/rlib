@@ -1,5 +1,13 @@
-*src
+# Vs code and stuff
 *__pycache__
+
+# Virtual env
 venv
+
+# Logs and Data
 *tb_logs
 *expert_trajectories
+
+# Personal
+docker-compose.cluster.yml
+docker-compose.override.yml
