@@ -33,7 +33,7 @@ class RolloutBuffer:
         else:
             return torch.tensor(value, dtype=dtype)
 
-    def get_data(self):
+    def get_data(self, q_normalization: bool = False):
         """
         Returns:
             data: Dict[torch.tensor]: Dict of tensors shape (N, dim)
@@ -54,6 +54,11 @@ class RolloutBuffer:
             data["rewards"], data["dones"], self.gamma
         )
 
+        if q_normalization:
+            q_mean = data["q_estimations"].mean()
+            q_std = data["q_estimations"].std()
+            data["q_estimations"] = (data["q_estimations"] - q_mean) / q_std
+
         return data
 
     def _get_trajectory_from_data(self, data, start, end):
@@ -72,7 +77,11 @@ class RolloutBuffer:
             trajectories: List[Dict[torch.tensor]]: List of trajectory dicts
         """
         trajectories = []
+
         indices = torch.nonzero(data["dones"].squeeze()).squeeze().numpy()
+        
+        if indices.size == 1:
+            indices = np.array([indices])
 
         trajectory = self._get_trajectory_from_data(data, 0, indices[0] + 1)
         trajectories.append(trajectory)
@@ -200,6 +209,7 @@ class ReplayBuffer:
         else:
             trajectory["rewards"] = self.rewards[self.old_done + 1 : self.new_done + 1]
 
+        trajectory["rewards"] = torch.tensor(trajectory["rewards"], dtype=torch.float32)
         trajectories.append(trajectory)
 
         return trajectories

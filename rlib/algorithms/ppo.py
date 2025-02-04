@@ -59,7 +59,7 @@ def ppo(
         steps_n += rollout_size
 
         # Logging
-        trajectories = buffer.get_trajectories()
+        trajectories = buffer.get_trajectories(data)
         logger.log_trajectories(trajectories)
 
 

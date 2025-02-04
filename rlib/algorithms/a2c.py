@@ -40,7 +40,7 @@ def a2c(
         steps_n += rollout_size
         episode_n += 1
 
-        trajectories = buffer.get_trajectories()
+        trajectories = buffer.get_trajectories(data)
         logger.log_trajectories(trajectories)
         logger.log_scalars(loss, episode_n)
 

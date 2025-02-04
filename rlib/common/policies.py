@@ -126,6 +126,7 @@ class DiscreteStochasticMlpPolicy(nn.Module):
                 action = dist.sample()
 
         log_prob_action = dist.log_prob(action)
+        log_prob_action = log_prob_action.reshape(-1, 1)
 
         return action, log_prob_action
 
@@ -137,8 +138,8 @@ class DiscreteStochasticMlpPolicy(nn.Module):
             observation (np.ndarray): (obs_dim,)
 
         Returns:
-            action: (np.ndarray): (action_dim,)
-            log_prob_action: (torch.Tensor): (B, 1)
+            action: (np.ndarray): (1,)
+            log_prob_action: (torch.Tensor): (1, 1)
         """
 
         expected_shape = (self.obs_dim,)
