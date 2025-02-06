@@ -1,8 +1,8 @@
 import gymnasium as gym
 
-from ..common.buffer import RolloutBuffer
-from ..common.logger import TensorBoardLogger
-from ..common.losses import a2c_loss
+from ...common.buffer import RolloutBuffer
+from ...common.logger import TensorBoardLogger
+from ...common.losses import a2c_loss
 
 
 def a2c(

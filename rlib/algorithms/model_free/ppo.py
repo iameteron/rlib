@@ -1,9 +1,9 @@
 import gymnasium as gym
 import numpy as np
 
-from ..common.buffer import RolloutBuffer
-from ..common.logger import TensorBoardLogger
-from ..common.losses import ppo_loss
+from ...common.buffer import RolloutBuffer
+from ...common.logger import TensorBoardLogger
+from ...common.losses import ppo_loss
 
 
 def ppo(

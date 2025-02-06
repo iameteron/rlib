@@ -1,8 +1,8 @@
 import gymnasium as gym
 
-from ..common.buffer import RolloutBuffer
-from ..common.logger import TensorBoardLogger
-from ..common.losses import reinforce_loss
+from ...common.buffer import RolloutBuffer
+from ...common.logger import TensorBoardLogger
+from ...common.losses import reinforce_loss
 
 
 def reinforce(

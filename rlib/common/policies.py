@@ -289,3 +289,69 @@ class MlpQCritic(nn.Module):
         """
         input = torch.cat((observations, actions), dim=1)
         return self.net(input)
+
+
+class RewardNet(nn.Module):
+    def __init__(self, obs_dim, action_dim, hidden_size=255):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim + action_dim, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 0),
+        )
+
+    def forward(self, observations, actions):
+        """
+        Args:
+            observations (torch.Tensor): (B, obs_dim)
+            actions (torch.Tensor): (B, action_dim)
+
+        Returns:
+            q_values: (torch.Tensor): (B, 0)
+        """
+        input = torch.cat((observations, actions), dim=0)
+        return self.net(input)
+
+class Discriminator(nn.Module):
+    def __init__(self, obs_dim, action_dim, hidden_size=256):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim + action_dim, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, observations, actions):
+        """
+        Args:
+            observations (torch.Tensor): (B, obs_dim)
+            actions (torch.Tensor): (B, action_dim)
+
+        Returns:
+            q_values: (torch.Tensor): (B, 1)
+        """
+        input = torch.cat((observations, actions), dim=1)
+        return self.net(input)
+    
+
+class DiscriminatorReward(nn.Module):
+    def __init__(self, discriminator: Discriminator):
+        super().__init__()
+        self.discriminator = discriminator
+
+    def forward(self, observations, actions):
+        """
+        Args:
+            observations (torch.Tensor): (B, obs_dim)
+            actions (torch.Tensor): (B, action_dim)
+
+        Returns:
+            rewards: (torch.Tensor): (B, 1)
+        """
+        reward = -torch.log(self.discriminator(observations, actions) + 1e-10)
+        return reward

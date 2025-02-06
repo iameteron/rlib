@@ -1,8 +1,10 @@
+from typing import Dict
+
 import torch
 from torch.distributions import Normal
 
 
-def reinforce_loss(data, returns_normalization=True):
+def reinforce_loss(data, returns_normalization=True) -> Dict[str, torch.Tensor]:
     loss = {}
 
     returns = data["q_estimations"]
@@ -18,7 +20,7 @@ def reinforce_loss(data, returns_normalization=True):
     return loss
 
 
-def a2c_loss(data, critic):
+def a2c_loss(data, critic) -> Dict[str, torch.Tensor]:
     loss = {}
 
     observations = data["observations"]
@@ -39,7 +41,8 @@ def ppo_loss(
     actor,
     critic,
     epsilon: float = 0.2,
-):
+    entropy_coef: float = 0.01,
+) -> Dict[str, torch.Tensor]:
     loss = {}
 
     observations = data["observations"]
@@ -65,7 +68,9 @@ def ppo_loss(
     return loss
 
 
-def ddpg_loss(data, actor, critic, actor_target, critic_target, gamma=0.99):
+def ddpg_loss(
+    data, actor, critic, actor_target, critic_target, gamma=0.99
+) -> Dict[str, torch.Tensor]:
     loss = {}
 
     observations = data["observations"]
@@ -100,7 +105,7 @@ def td3_loss(
     gamma=0.99,
     policy_std=0.2,
     policy_clip=0.5,
-):
+) -> Dict[str, torch.Tensor]:
     loss = {}
 
     observations = data["observations"]
@@ -151,7 +156,7 @@ def sac_loss(
     critic_2_target,
     gamma=0.99,
     alpha=1e-3,
-):
+) -> Dict[str, torch.Tensor]:
     loss = {}
 
     observations = data["observations"]
@@ -188,5 +193,54 @@ def sac_loss(
 
     loss["critic_1"] = ((q_values_1 - targets) ** 2).mean()
     loss["critic_2"] = ((q_values_2 - targets) ** 2).mean()
+
+    return loss
+
+
+def gcl_loss(
+    reward_net,
+    learning_data,
+    expert_data,
+) -> Dict[str, torch.Tensor]:
+    loss = {}
+
+    learning_observations = learning_data["observations"]
+    learning_actions = learning_data["actions"]
+
+    loss["learning"] = reward_net(
+        learning_observations, learning_actions
+    ).mean()
+
+    expert_observations = expert_data["observations"]
+    expert_actions = expert_data["actions"]
+
+    loss["expert"] = reward_net(expert_observations, expert_actions).mean()
+
+    loss["reward"] = -(loss["expert"] - loss["learning"])
+
+    return loss
+
+
+def gail_loss(
+    discriminator,
+    learning_trajectories,
+    expert_trajectories,
+) -> Dict[str, torch.Tensor]:
+    loss = {}
+
+    learning_observations = learning_trajectories["observations"]
+    learning_actions = learning_trajectories["actions"]
+
+    learning_preds = discriminator(learning_observations, learning_actions)
+
+    expert_observations = expert_trajectories["observations"]
+    expert_actions = expert_trajectories["actions"]
+
+    expert_preds = discriminator(expert_observations, expert_actions)
+
+    loss["learning"] = -torch.log(learning_preds + 1e-10).mean()
+    loss["expert"] = -torch.log(1 - expert_preds + 1e-10).mean()
+
+    loss["discriminator"] = loss["expert"] + loss["learning"]
 
     return loss

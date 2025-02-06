@@ -3,11 +3,11 @@ from copy import deepcopy
 import gymnasium as gym
 from torch.optim import Adam
 
-from ..common.buffer import ReplayBuffer
-from ..common.logger import TensorBoardLogger
-from ..common.losses import td3_loss
-from ..common.policies import DeterministicMlpPolicy, MlpQCritic
-from ..common.utils import smooth_update
+from ...common.buffer import ReplayBuffer
+from ...common.logger import TensorBoardLogger
+from ...common.losses import td3_loss
+from ...common.policies import DeterministicMlpPolicy, MlpQCritic
+from ...common.utils import smooth_update
 
 
 def td3(

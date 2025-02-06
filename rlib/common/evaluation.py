@@ -16,7 +16,9 @@ def save_frames_as_gif(frames, path="./gifs/", filename="gym_animation.gif", fps
     anim.save(path + filename, writer="imagemagick", fps=fps)
 
 
-def get_trajectory(env, agent, visualize=False, deterministic=True):
+def get_trajectory(
+    env, agent, visualize=False, deterministic=True, filename="gym_animation.gif"
+):
     trajectory = {
         "states": [],
         "actions": [],
@@ -48,7 +50,7 @@ def get_trajectory(env, agent, visualize=False, deterministic=True):
 
     if visualize:
         print("saving...")
-        save_frames_as_gif(frames)
+        save_frames_as_gif(frames, filename=filename)
 
     return trajectory
 
