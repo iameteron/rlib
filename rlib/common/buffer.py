@@ -1,12 +1,9 @@
 import numpy as np
 import torch
 
-from .utils import get_returns
-
 
 class RolloutBuffer:
-    def __init__(self, gamma=1):
-        self.gamma = gamma
+    def __init__(self):
         self.clear()
 
     def clear(self):
@@ -33,7 +30,7 @@ class RolloutBuffer:
         else:
             return torch.tensor(value, dtype=dtype)
 
-    def get_data(self, q_normalization: bool = False):
+    def get_data(self):
         """
         Returns:
             data: Dict[torch.tensor]: Dict of tensors shape (N, dim)
@@ -47,17 +44,7 @@ class RolloutBuffer:
         }
 
         data["log_probs"] = torch.cat(self.log_probs, dim=0)
-
         data["dones"] = torch.bitwise_or(data["terminated"], data["truncated"])
-
-        data["q_estimations"] = get_returns(
-            data["rewards"], data["dones"], self.gamma
-        )
-
-        if q_normalization:
-            q_mean = data["q_estimations"].mean()
-            q_std = data["q_estimations"].std()
-            data["q_estimations"] = (data["q_estimations"] - q_mean) / q_std
 
         return data
 
@@ -67,7 +54,6 @@ class RolloutBuffer:
         trajectory["observations"] = data["observations"][start:end]
         trajectory["actions"] = data["actions"][start:end]
         trajectory["rewards"] = data["rewards"][start:end]
-        trajectory["q_estimations"] = data["q_estimations"][start:end]
 
         return trajectory
 
@@ -191,8 +177,8 @@ class ReplayBuffer:
             ),
             "actions": torch.tensor(self.actions[indices], dtype=torch.float32),
             "rewards": torch.tensor(self.rewards[indices], dtype=torch.float32),
-            "terminated": torch.tensor(self.terminated[indices], dtype=torch.bool),
-            "truncated": torch.tensor(self.truncated[indices], dtype=torch.bool),
+            "terminated": torch.tensor(self.terminated[indices], dtype=torch.int8),
+            "truncated": torch.tensor(self.truncated[indices], dtype=torch.int8),
         }
 
         return batch

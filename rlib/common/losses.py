@@ -3,8 +3,18 @@ from typing import Dict
 import torch
 from torch.distributions import Normal
 
+from .policies import (
+    DeterministicMlpPolicy,
+    Discriminator,
+    MlpQCritic,
+    RewardNet,
+    StochasticMlpPolicy,
+)
 
-def reinforce_loss(data, returns_normalization=True) -> Dict[str, torch.Tensor]:
+
+def reinforce_loss(
+    data: Dict[str, torch.Tensor], returns_normalization=True
+) -> Dict[str, torch.Tensor]:
     loss = {}
 
     returns = data["q_estimations"]
@@ -15,20 +25,18 @@ def reinforce_loss(data, returns_normalization=True) -> Dict[str, torch.Tensor]:
         std = returns.std()
         returns = (returns - mean) / (std + 1e-8)
 
+    print((log_probs * returns).shape)
+
     loss["actor"] = -(log_probs * returns).mean()
 
     return loss
 
 
-def a2c_loss(data, critic) -> Dict[str, torch.Tensor]:
+def a2c_loss(data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
     loss = {}
 
-    observations = data["observations"]
     log_probs = data["log_probs"]
-    targets = data["q_estimations"]
-
-    values = critic(observations)
-    advantages = targets[:-1].detach() - values[:-1]
+    advantages = data["advantages"]
 
     loss["actor"] = -(log_probs[:-1] * advantages.detach()).mean()
     loss["critic"] = (advantages**2).mean()
@@ -37,27 +45,29 @@ def a2c_loss(data, critic) -> Dict[str, torch.Tensor]:
 
 
 def ppo_loss(
-    data,
-    actor,
-    critic,
+    data: Dict[str, torch.Tensor],
+    actor: StochasticMlpPolicy,
     epsilon: float = 0.2,
-    entropy_coef: float = 0.01,
+    entropy_coef: float = 0.01,  # TODO: add entropy coeff
 ) -> Dict[str, torch.Tensor]:
     loss = {}
 
     observations = data["observations"]
     old_log_probs = data["log_probs"]
     actions = data["actions"]
-    targets = data["q_estimations"]
+    advantages = data["advantages"]
+
+    print(
+        observations.shape,
+        old_log_probs.shape,
+        actions.shape,
+        advantages.shape,
+    )
 
     _, new_log_probs = actor.get_action(observations, action=actions)
 
     ratio = torch.exp(new_log_probs - old_log_probs.detach())
     ratio_clipped = torch.clamp(ratio, 1 - epsilon, 1 + epsilon)
-
-    values = critic(observations)
-
-    advantages = targets.detach() - values
 
     actor_loss_1 = ratio * advantages.detach()
     actor_loss_2 = ratio_clipped * advantages.detach()
@@ -69,7 +79,12 @@ def ppo_loss(
 
 
 def ddpg_loss(
-    data, actor, critic, actor_target, critic_target, gamma=0.99
+    data: Dict[str, torch.Tensor],
+    actor: DeterministicMlpPolicy,
+    critic: MlpQCritic,
+    actor_target: DeterministicMlpPolicy,
+    critic_target: MlpQCritic,
+    gamma: float = 0.99,
 ) -> Dict[str, torch.Tensor]:
     loss = {}
 
@@ -84,7 +99,7 @@ def ddpg_loss(
 
     with torch.no_grad():
         actions_target = actor_target(next_observations)
-        targets = rewards + gamma * (~terminated) * critic_target(
+        targets = rewards + gamma * (1 - terminated) * critic_target(
             next_observations, actions_target
         )
 
@@ -95,13 +110,13 @@ def ddpg_loss(
 
 
 def td3_loss(
-    data,
-    actor,
-    critic_1,
-    critic_2,
-    actor_target,
-    critic_1_target,
-    critic_2_target,
+    data: Dict[str, torch.Tensor],
+    actor: DeterministicMlpPolicy,
+    critic_1: MlpQCritic,
+    critic_2: MlpQCritic,
+    actor_target: DeterministicMlpPolicy,
+    critic_1_target: MlpQCritic,
+    critic_2_target: MlpQCritic,
     gamma=0.99,
     policy_std=0.2,
     policy_clip=0.5,
@@ -136,7 +151,7 @@ def td3_loss(
             critic_1_target(next_observations, actions_target),
             critic_2_target(next_observations, actions_target),
         )
-        targets = rewards + gamma * (~terminated) * target_q_values
+        targets = rewards + gamma * (1 - terminated) * target_q_values
 
     q_values_1 = critic_1(observations, actions)
     q_values_2 = critic_2(observations, actions)
@@ -148,14 +163,14 @@ def td3_loss(
 
 
 def sac_loss(
-    data,
-    actor,
-    critic_1,
-    critic_2,
-    critic_1_target,
-    critic_2_target,
-    gamma=0.99,
-    alpha=1e-3,
+    data: Dict[str, torch.Tensor],
+    actor: StochasticMlpPolicy,
+    critic_1: MlpQCritic,
+    critic_2: MlpQCritic,
+    critic_1_target: MlpQCritic,
+    critic_2_target: MlpQCritic,
+    gamma: float = 0.99,
+    alpha: float = 1e-3,
 ) -> Dict[str, torch.Tensor]:
     loss = {}
 
@@ -184,7 +199,7 @@ def sac_loss(
             critic_2_target(next_observations, next_actions),
         )
 
-        targets = rewards + gamma * (~terminated) * (
+        targets = rewards + gamma * (1 - terminated) * (
             target_q_values - alpha * next_log_probs
         )
 
@@ -198,49 +213,42 @@ def sac_loss(
 
 
 def gcl_loss(
-    reward_net,
-    learning_data,
-    expert_data,
+    reward_net: RewardNet,
+    learning_data: Dict[str, torch.Tensor],
+    expert_data: Dict[str, torch.Tensor],
 ) -> Dict[str, torch.Tensor]:
     loss = {}
 
     learning_observations = learning_data["observations"]
     learning_actions = learning_data["actions"]
 
-    loss["learning"] = reward_net(
-        learning_observations, learning_actions
-    ).mean()
-
     expert_observations = expert_data["observations"]
     expert_actions = expert_data["actions"]
 
+    loss["learning"] = reward_net(learning_observations, learning_actions).mean()
     loss["expert"] = reward_net(expert_observations, expert_actions).mean()
-
     loss["reward"] = -(loss["expert"] - loss["learning"])
 
     return loss
 
 
 def gail_loss(
-    discriminator,
-    learning_trajectories,
-    expert_trajectories,
+    discriminator: Discriminator,
+    learning_trajectories: Dict[str, torch.Tensor],
+    expert_trajectories: Dict[str, torch.Tensor],
 ) -> Dict[str, torch.Tensor]:
     loss = {}
 
     learning_observations = learning_trajectories["observations"]
     learning_actions = learning_trajectories["actions"]
-
     learning_preds = discriminator(learning_observations, learning_actions)
 
     expert_observations = expert_trajectories["observations"]
     expert_actions = expert_trajectories["actions"]
-
     expert_preds = discriminator(expert_observations, expert_actions)
 
     loss["learning"] = -torch.log(learning_preds + 1e-10).mean()
     loss["expert"] = -torch.log(1 - expert_preds + 1e-10).mean()
-
     loss["discriminator"] = loss["expert"] + loss["learning"]
 
     return loss

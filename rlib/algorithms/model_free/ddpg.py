@@ -40,13 +40,13 @@ def ddpg(
 
         loss = ddpg_loss(batch, actor, critic, actor_target, critic_target)
 
+        actor_optimizer.zero_grad()
         loss["actor"].backward()
         actor_optimizer.step()
-        actor_optimizer.zero_grad()
 
+        critic_optimizer.zero_grad()
         loss["critic"].backward()
         critic_optimizer.step()
-        critic_optimizer.zero_grad()
 
         actor_target = smooth_update(actor, actor_target)
         critic_target = smooth_update(critic, critic_target)

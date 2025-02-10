@@ -50,17 +50,17 @@ def sac(
             critic_2_target,
         )
 
+        actor_optimizer.zero_grad()
         loss["actor"].backward()
         actor_optimizer.step()
-        actor_optimizer.zero_grad()
 
+        critic_1_optimizer.zero_grad()
         loss["critic_1"].backward()
         critic_1_optimizer.step()
-        critic_1_optimizer.zero_grad()
 
+        critic_2_optimizer.zero_grad()
         loss["critic_2"].backward()
         critic_2_optimizer.step()
-        critic_2_optimizer.zero_grad()
 
         if steps_n % target_update_frequency == 0:
             critic_1_target = smooth_update(critic_1, critic_1_target)
