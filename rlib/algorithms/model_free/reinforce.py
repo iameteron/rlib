@@ -24,8 +24,7 @@ def reinforce(
     while steps_n < total_timesteps:
         buffer.collect_rollouts(env, policy, trajectories_n=1)
         data = buffer.get_data()
-
-        data["q_estimations"] = get_returns(data["rewards"], data["terminated"], gamma)
+        data["q_estimations"] = get_returns(data["rewards"], data["dones"], gamma)
 
         loss = reinforce_loss(data)
 

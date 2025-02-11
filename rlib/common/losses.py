@@ -25,8 +25,6 @@ def reinforce_loss(
         std = returns.std()
         returns = (returns - mean) / (std + 1e-8)
 
-    print((log_probs * returns).shape)
-
     loss["actor"] = -(log_probs * returns).mean()
 
     return loss
@@ -47,6 +45,7 @@ def a2c_loss(data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
 def ppo_loss(
     data: Dict[str, torch.Tensor],
     actor: StochasticMlpPolicy,
+    critic,
     epsilon: float = 0.2,
     entropy_coef: float = 0.01,  # TODO: add entropy coeff
 ) -> Dict[str, torch.Tensor]:
@@ -55,19 +54,17 @@ def ppo_loss(
     observations = data["observations"]
     old_log_probs = data["log_probs"]
     actions = data["actions"]
-    advantages = data["advantages"]
-
-    print(
-        observations.shape,
-        old_log_probs.shape,
-        actions.shape,
-        advantages.shape,
-    )
+    # advantages = data["advantages"]
+    targets = data["q_estimations"]
 
     _, new_log_probs = actor.get_action(observations, action=actions)
 
     ratio = torch.exp(new_log_probs - old_log_probs.detach())
     ratio_clipped = torch.clamp(ratio, 1 - epsilon, 1 + epsilon)
+
+    values = critic(observations)
+
+    advantages = targets.detach() - values
 
     actor_loss_1 = ratio * advantages.detach()
     actor_loss_2 = ratio_clipped * advantages.detach()
