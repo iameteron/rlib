@@ -13,7 +13,7 @@ def reinforce(
     policy: StochasticMlpPolicy,
     optimizer: Adam,
     total_timesteps: int = 50_000,
-    gamma: float = 0.99,
+    gamma: float = 0.9,
 ):
     buffer = RolloutBuffer()
     logger = TensorBoardLogger(log_dir="./tb_logs/reinforce_")
@@ -24,7 +24,11 @@ def reinforce(
     while steps_n < total_timesteps:
         buffer.collect_rollouts(env, policy, trajectories_n=1)
         data = buffer.get_data()
-        data["q_estimations"] = get_returns(data["rewards"], data["dones"], gamma)
+
+        rewards = data["rewards"]
+        dones = data["dones"]
+
+        data["q_estimations"] = get_returns(rewards, dones, gamma)
 
         loss = reinforce_loss(data)
 

@@ -6,7 +6,7 @@ from ...common.buffer import RolloutBuffer
 from ...common.logger import TensorBoardLogger
 from ...common.losses import ppo_loss
 from ...common.policies import MlpCritic, StochasticMlpPolicy
-from ...common.utils import get_returns
+from ...common.utils import get_gae
 
 
 def ppo(
@@ -17,9 +17,9 @@ def ppo(
     critic_optimizer: Adam,
     total_timesteps: int = 50_000,
     trajectories_n: int = 20,
-    epochs_per_episode: int = 10,
+    epochs_per_episode: int = 30,
     batch_size: int = 128,
-    gamma: float = 0.99,
+    gamma: float = 0.9,
     lamb: float = 0.95,
     epsilon: float = 0.2,
 ):
@@ -33,8 +33,17 @@ def ppo(
         buffer.collect_rollouts(env, actor, trajectories_n=trajectories_n)
 
         data = buffer.get_data()
-        rollout_size = data["observations"].shape[0]
-        data["q_estimations"] = get_returns(data["rewards"], data["dones"], gamma)
+
+        observations = data["observations"]
+        rewards = data["rewards"]
+        dones = data["dones"]
+
+        rollout_size = observations.shape[0]
+
+        values = critic(observations)
+        targets, _ = get_gae(rewards, values, dones, gamma, lamb)
+
+        data["q_estimations"] = targets
 
         for _ in range(epochs_per_episode):
             indices = np.random.permutation(range(rollout_size))
@@ -48,7 +57,13 @@ def ppo(
 
                 batch = {key: value[batch_indices] for key, value in data.items()}
 
-                loss = ppo_loss(batch, actor, critic, epsilon)
+                observations = batch["observations"]
+                targets = batch["q_estimations"]
+
+                values = critic(observations)
+                batch["advantages"] = targets.detach() - values
+
+                loss = ppo_loss(batch, actor, epsilon)
 
                 actor_optimizer.zero_grad()
                 loss["actor"].backward()

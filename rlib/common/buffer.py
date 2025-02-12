@@ -49,12 +49,7 @@ class RolloutBuffer:
         return data
 
     def _get_trajectory_from_data(self, data, start, end):
-        trajectory = {}
-
-        trajectory["observations"] = data["observations"][start:end]
-        trajectory["actions"] = data["actions"][start:end]
-        trajectory["rewards"] = data["rewards"][start:end]
-
+        trajectory = {key: value[start:end] for key, value in data.items()}
         return trajectory
 
     def get_trajectories(self, data):

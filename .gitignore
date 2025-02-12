@@ -11,3 +11,4 @@ venv
 # Personal
 docker-compose.cluster.yml
 docker-compose.override.yml
+*testing.ipynb

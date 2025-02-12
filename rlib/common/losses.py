@@ -36,7 +36,7 @@ def a2c_loss(data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
     log_probs = data["log_probs"]
     advantages = data["advantages"]
 
-    loss["actor"] = -(log_probs[:-1] * advantages.detach()).mean()
+    loss["actor"] = -(log_probs * advantages.detach()).mean()
     loss["critic"] = (advantages**2).mean()
 
     return loss
@@ -45,26 +45,20 @@ def a2c_loss(data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
 def ppo_loss(
     data: Dict[str, torch.Tensor],
     actor: StochasticMlpPolicy,
-    critic,
     epsilon: float = 0.2,
     entropy_coef: float = 0.01,  # TODO: add entropy coeff
 ) -> Dict[str, torch.Tensor]:
     loss = {}
 
     observations = data["observations"]
-    old_log_probs = data["log_probs"]
     actions = data["actions"]
-    # advantages = data["advantages"]
-    targets = data["q_estimations"]
+    old_log_probs = data["log_probs"]
+    advantages = data["advantages"]
 
     _, new_log_probs = actor.get_action(observations, action=actions)
 
     ratio = torch.exp(new_log_probs - old_log_probs.detach())
     ratio_clipped = torch.clamp(ratio, 1 - epsilon, 1 + epsilon)
-
-    values = critic(observations)
-
-    advantages = targets.detach() - values
 
     actor_loss_1 = ratio * advantages.detach()
     actor_loss_2 = ratio_clipped * advantages.detach()
@@ -92,15 +86,15 @@ def ddpg_loss(
     terminated = data["terminated"]
 
     actor_outputs = actor(observations)
-    loss["actor"] = -critic(observations, actor_outputs).mean()
 
     with torch.no_grad():
         actions_target = actor_target(next_observations)
-        targets = rewards + gamma * (1 - terminated) * critic_target(
-            next_observations, actions_target
-        )
+        values_target = critic_target(next_observations, actions_target)
+        targets = rewards + gamma * (1 - terminated) * values_target
 
     q_values = critic(observations, actions)
+
+    loss["actor"] = -critic(observations, actor_outputs).mean()
     loss["critic"] = ((q_values - targets) ** 2).mean()
 
     return loss
@@ -132,7 +126,6 @@ def td3_loss(
         critic_1(observations, actor_outputs),
         critic_2(observations, actor_outputs),
     )
-    loss["actor"] = -q_values.mean()
 
     with torch.no_grad():
         actions_target = actor_target(next_observations)
@@ -153,6 +146,7 @@ def td3_loss(
     q_values_1 = critic_1(observations, actions)
     q_values_2 = critic_2(observations, actions)
 
+    loss["actor"] = -q_values.mean()
     loss["critic_1"] = ((q_values_1 - targets) ** 2).mean()
     loss["critic_2"] = ((q_values_2 - targets) ** 2).mean()
 
@@ -186,8 +180,6 @@ def sac_loss(
         critic_2(observations, actor_actions),
     )
 
-    loss["actor"] = -(q_actor_values - alpha * actor_log_probs).mean()
-
     with torch.no_grad():
         next_actions, next_log_probs = actor.get_action(next_observations)
 
@@ -203,6 +195,7 @@ def sac_loss(
     q_values_1 = critic_1(observations, actions)
     q_values_2 = critic_2(observations, actions)
 
+    loss["actor"] = -(q_actor_values - alpha * actor_log_probs).mean()
     loss["critic_1"] = ((q_values_1 - targets) ** 2).mean()
     loss["critic_2"] = ((q_values_2 - targets) ** 2).mean()
 

@@ -299,7 +299,7 @@ class RewardNet(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, 0),
+            nn.Linear(hidden_size, 1),
         )
 
     def forward(self, observations, actions):
@@ -311,7 +311,7 @@ class RewardNet(nn.Module):
         Returns:
             q_values: (torch.Tensor): (B, 0)
         """
-        input = torch.cat((observations, actions), dim=0)
+        input = torch.cat((observations, actions), dim=1)
         return self.net(input)
 
 class Discriminator(nn.Module):

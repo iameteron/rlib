@@ -15,8 +15,8 @@ def a2c(
     actor_optimizer: Adam,
     critic_optimizer: Adam,
     total_timesteps: int = 50_000,
-    trajectories_n: int = 10,
-    gamma: float = 0.99,
+    trajectories_n: int = 1,
+    gamma: float = 0.9,
 ):
     buffer = RolloutBuffer()
     logger = TensorBoardLogger(log_dir="./tb_logs/a2c_")
@@ -28,10 +28,15 @@ def a2c(
 
         data = buffer.get_data()
 
-        values = critic(data["observations"])
-        _, data["advantages"] = get_1_step_td_advantage(
-            data["rewards"], values, data["terminated"], gamma
-        )
+        observations = data["observations"]
+        rewards = data["rewards"]
+        dones = data["dones"]
+        rollout_size = observations.shape[0]
+
+        values = critic(observations)
+        targets, _ = get_1_step_td_advantage(rewards, values, dones, gamma)
+
+        data["advantages"] = targets.detach() - values
 
         loss = a2c_loss(data)
 
@@ -44,7 +49,6 @@ def a2c(
         critic_optimizer.step()
 
         # Logging
-        rollout_size = data["observations"].shape[0]
         steps_n += rollout_size
         episode_n += 1
 
