@@ -7,6 +7,7 @@ venv
 # Logs and Data
 *tb_logs
 *expert_trajectories
+*models
 
 # Personal
 docker-compose.cluster.yml
