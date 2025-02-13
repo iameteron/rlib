@@ -16,7 +16,7 @@ class TensorBoardLogger:
     def log_scalar(self, tag, value, step):
         self.writer.add_scalar(tag, value, step)
 
-    def log_scalars(self, metrics, step):
+    def log_scalars(self, metrics: dict, step: int):
         for tag, value in metrics.items():
             self.log_scalar(tag, value, step)
 

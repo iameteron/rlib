@@ -7,7 +7,7 @@
 - **Model-Free RL:** A2C, PPO, SAC, TD3, DDPG, REINFORCE
 - **Imitation Learning:** GAIL, GCL
 - **Offline RL:** Decision Transformer (DT)
-- **Common Utilities:** Replay buffer, environments, logging, evaluation
+- **Common Utilities:** Replay and rollout buffers, logging, evaluation
 - **Docker Support:** Easily deployable with Docker and `docker-compose`
 - **Notebook Examples:** Pre-built Jupyter notebooks to demonstrate usage
 
@@ -17,12 +17,6 @@ You can install the required dependencies with:
 
 ```bash
 pip install -r requirements.txt
-```
-
-Or install the package using:
-
-```bash
-pip install rlib
 ```
 
 ## Quick Start
