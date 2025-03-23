@@ -16,4 +16,4 @@ RUN rm -rf /etc/apt/sources.list.d/* && \
 RUN python3 -m pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-CMD ["service", "ssh", "start"]
+CMD ["bash"]
